@@ -1,0 +1,44 @@
+on:
+  push:
+    - workflows: [lint, test]
+      filter:
+        branches: ["master"]
+
+  pull_request:
+    - workflows: [lint, test]
+      filter:
+        target_branches: ["master"]
+
+workflows:
+  lint:
+    tasks:
+      - name: php-lint
+        cubes:
+          - name: php-lint
+            image: composer:latest
+            script:
+              - composer install --no-interaction --prefer-dist
+              - vendor/bin/phpstan analyse --no-progress
+              - vendor/bin/phpcs -n
+              - vendor/bin/psalm --no-cache --no-progress
+
+      - name: js-lint
+        cubes:
+          - name: js-lint
+            image: node:22
+            script:
+              - npm ci
+              - npm run lint
+              - npm run stylelint
+
+  test:
+    tasks:
+      - name: php-tests
+        cubes:
+          - name: phpunit
+            image: composer:latest
+            script:
+              - composer install --no-interaction --prefer-dist
+              - cp .env.example .env
+              - php artisan key:generate
+              - composer test
