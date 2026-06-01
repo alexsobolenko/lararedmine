@@ -1,45 +1,153 @@
-# LaraRedmine
+# Дорожная карта LaraRedmine
 
-LaraRedmine - новая реализация проектного менеджера в духе Redmine на стеке Laravel 13 + React SPA + PostgreSQL.
+> Redmine-inspired project management application built with **Laravel 13** and **React 19**.
 
-Это не форк Redmine и не перенос его Ruby on Rails кода. Redmine используется как функциональный ориентир: проекты, задачи, роли, workflow, учет времени, wiki, файлы, уведомления, REST API и расширяемость через плагины.
+LaraRedmine — это open-source система управления проектами, вдохновлённая Redmine. Цель проекта — создать современную, расширяемую и удобную альтернативу с API-first подходом, Docker-first инфраструктурой и PostgreSQL в качестве основной БД.
 
-## Документация
+---
 
-- [SPECIFICATION.md](SPECIFICATION.md) - что строим: функциональные модули, сущности, API, права, плагины, безопасность.
-- [ROADMAP.md](ROADMAP.md) - в каком порядке строим: фазы от инфраструктуры до production hardening.
+## Технологический стек
 
-## Переменные окружения
+| Компонент | Технология |
+|-----------|------------|
+| **Backend** | PHP 8.3, Laravel 13 |
+| **Frontend** | React 19, TypeScript, Vite, Bootstrap 5, SCSS |
+| **База данных** | PostgreSQL |
+| **Инфраструктура** | Docker Compose, Nginx, PHP-FPM |
+| **Качество кода** | PHPStan, Psalm, PHPCS, ESLint, Stylelint, Pint |
+| **Тестирование** | PHPUnit, Larastan |
+| **Git hooks** | Husky, Commitlint |
 
-Для development-окружения вручную скопируй пример переменных:
+---
+
+## Требования
+
+- **Docker** и **Docker Compose** (рекомендуется Docker Desktop или Docker Engine + docker compose plugin)
+- **Make** (для удобного запуска команд)
+
+---
+
+## Быстрый старт
+
+### 1. Клонирование и настройка
 
 ```bash
+git clone <repo-url>
+cd lararedmine
 cp .env.example .env
 ```
 
-Для production-конфигурации используй отдельный пример:
+### 2. Сборка и запуск (dev-окружение)
 
 ```bash
-cp .env.production.example .env
+make dev-build    # сборка образов
+make dev-up       # запуск контейнеров
 ```
 
-После копирования заполни значения под свое окружение. Реальные `.env`-файлы не коммитятся.
+### 3. Установка зависимостей
 
-## Команды
+```bash
+# PHP-зависимости (внутри контейнера)
+docker compose -f docker-compose.dev.yml exec php composer install
+
+# Генерация ключа приложения
+docker compose -f docker-compose.dev.yml exec php php artisan key:generate
+
+# Миграции БД
+docker compose -f docker-compose.dev.yml exec php php artisan migrate
+
+# Frontend-зависимости (внутри контейнера)
+docker compose -f docker-compose.dev.yml exec node npm install
+```
+
+### 4. Запуск фронтенда в режиме разработки
+
+```bash
+make dev-frontend-build
+```
+
+Приложение будет доступно по адресу: `http://localhost`
+
+---
+
+## Команды Makefile
 
 ### Разработка
 
-- `make dev-build` - собрать Docker-образы для development-конфигурации.
-- `make dev-up` - запустить development-окружение в фоне.
-- `make dev-down` - остановить и удалить контейнеры development-окружения.
-- `make dev-logs` - открыть поток логов development-окружения.
-- `make dev-frontend-build` - запустить Vite dev server в Node-контейнере после `make dev-up`.
-- `make dev-test` - запустить Laravel-тесты в PHP-контейнере development-окружения.
+| Команда | Описание |
+|---------|----------|
+| `make dev-build` | Сборка Docker-образов для разработки |
+| `make dev-up` | Запуск контейнеров в фоне |
+| `make dev-down` | Остановка и удаление контейнеров |
+| `make dev-logs` | Просмотр логов всех контейнеров (follow) |
+| `make dev-frontend-build` | Запуск Vite dev-сервера для фронтенда |
+| `make dev-lint` | Запуск всех линтеров (ESLint, Stylelint, PHPStan, PHPCS, Psalm) |
+| `make dev-test` | Запуск PHPUnit тестов |
+| `make dev-ps` | Список запущенных контейнеров |
+| `make dev-exec <cmd>` | Выполнить произвольную команду в контейнере |
 
-### Production-конфигурация
+### Продакшн
 
-- `make prod-build` - собрать Docker-образы для production-конфигурации.
-- `make prod-up` - запустить production-конфигурацию в фоне.
-- `make prod-down` - остановить и удалить контейнеры production-конфигурации.
-- `make prod-logs` - открыть поток логов production-конфигурации.
-- `make prod-frontend-build` - собрать frontend assets через Node-контейнер из production-конфигурации.
+| Команда | Описание |
+|---------|----------|
+| `make prod-build` | Сборка продакшн-образов |
+| `make prod-up` | Запуск продакшн-контейнеров |
+| `make prod-down` | Остановка продакшн-контейнеров |
+| `make prod-logs` | Просмотр логов продакшн-контейнеров |
+| `make prod-frontend-build` | Сборка фронтенда для продакшна (через profile build) |
+| `make prod-ps` | Список продакшн-контейнеров |
+| `make prod-exec <cmd>` | Выполнить команду в продакшн-контейнере |
+
+---
+
+## Полезные команды (внутри контейнера)
+
+### PHP-контейнер
+
+```bash
+# Запуск миграций
+php artisan migrate
+
+# Очистка кеша конфигурации
+php artisan config:clear
+
+# Запуск тестов
+composer test
+
+# PHPStan статический анализ
+vendor/bin/phpstan analyse
+
+# PHP CodeSniffer
+vendor/bin/phpcs -n
+
+# Psalm статический анализ
+vendor/bin/psalm --no-cache
+```
+
+### Node-контейнер
+
+```bash
+# Установка зависимостей
+npm install
+
+# Запуск Vite dev-сервера
+npm run dev
+
+# Сборка для продакшна
+npm run build
+
+# Линтинг JS/TS
+npm run lint
+
+# Линтинг стилей
+npm run stylelint
+
+# Полная проверка фронтенда
+npm run check
+```
+
+---
+
+## Лицензия
+
+Проект распространяется под лицензией MIT. См. файл [LICENSE.txt](LICENSE.txt).
