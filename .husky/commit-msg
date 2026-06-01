@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+if command -v npx >/dev/null 2>&1; then
+    npx --no -- commitlint --edit "$1"
+else
+    docker compose -f docker-compose.dev.yml exec -T node npx --no -- commitlint --edit "$1"
+fi
